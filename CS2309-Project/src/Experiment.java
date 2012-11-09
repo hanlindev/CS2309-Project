@@ -52,12 +52,14 @@ class Tweet {
 	public boolean success() {
 		return (this.reliable == this.verified);
 	}
+	
+	public String toString() {
+		return value + "\nReliable? " + reliable + "\nVerified?" + verified + "\n";
+	}
 }
 
 public class Experiment {
 	// size of sample
-	static int size = 50;
-	static ArrayList<Tweet> list;
 	static int numExperiments;
 	static double[] thresholds = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
 	//static double[] thresholds = {0.1};
@@ -72,7 +74,7 @@ public class Experiment {
 		for (int i = 0; i < thresholds.length; ++i) {
 			Checker.initialize(thresholds[i]);
 			BufferedReader reader = new BufferedReader(new FileReader("Tweets"));
-			list = new ArrayList<Tweet>(300);
+			ArrayList<Tweet> list = new ArrayList<Tweet>(300);
 			int method = Integer.parseInt(args[0]);
 			File aDir = new File("Method" + method);
 			aDir.mkdir();
@@ -83,43 +85,12 @@ public class Experiment {
 				tweet = reader.readLine();
 				reliable = reader.readLine();
 				boolean reli = false;
-				if (reliable.equals("y")) {
+				if (reliable.equals("n")) {
 					reli = true;
 				}
 				list.add(new Tweet(tweet, reli, method));
 			}
-			
-			int currNo = 0;
-			double[] sampleResults = new double[numExperiments];
-			writer.write("Sample Results:\n");
-			while (currNo < numExperiments) {
-				LinkedList<Tweet> sample = new LinkedList<Tweet>();
-				int largestNum = list.size();
-				boolean[] taken = new boolean[list.size()];
-				Arrays.fill(taken, false);
-				int index = 0;
-				int numPass = 0;
-				Random rng = new Random();
-				while(index < size) {
-					int j = rng.nextInt(largestNum);
-					if (!taken[j]) {
-						taken[j] = true;
-						Tweet aTweet = list.get(j);
-						sample.add(aTweet);
-						++index;
-						if (aTweet.success()) {
-							++numPass;
-						}
-					}
-				}
-				sampleResults[currNo++] = (double)numPass / (double)size;
-				writer.write(sampleResults[currNo - 1] + "\n");
-			}
-			writer.write("Mean:\n");
-			writer.write("" + StatUtils.mean(sampleResults) + "\n");
-			writer.write("Variance:\n");
-			writer.write("" + StatUtils.variance(sampleResults));
-			writer.flush();
+			testTweets(list, writer, null);
 		}
 	}
 	
@@ -139,7 +110,7 @@ public class Experiment {
 				tweet = reader.readLine();
 				reliable = reader.readLine();
 				boolean reli = false;
-				if (reliable.equals("y")) {
+				if (reliable.equals("n")) {
 					reli = true;
 				}
 				if (reli) {
@@ -169,6 +140,9 @@ public class Experiment {
 		} else {
 			out.write("Sample Results:(rumor tweets)\n");
 		}
+		int size = aList.size() / 5;
+		LinkedList<Tweet> positiveResults = new LinkedList<Tweet>();
+		LinkedList<Tweet> negativeResults = new LinkedList<Tweet>();
 		while (currNo < numExperiments) {
 			LinkedList<Tweet> sample = new LinkedList<Tweet>();
 			int largestNum = aList.size();
@@ -185,17 +159,31 @@ public class Experiment {
 					sample.add(aTweet);
 					++index;
 					if (aTweet.success()) {
+						positiveResults.add(aTweet);
 						++numPass;
+					} else {
+						negativeResults.add(aTweet);
 					}
 				}
 			}
 			sampleResults[currNo++] = (double)numPass / (double)size;
 			out.write(sampleResults[currNo - 1] + "\n");
 		}
+		out.write("Figures:===================================");
 		out.write("Mean:\n");
 		out.write("" + StatUtils.mean(sampleResults) + "\n");
 		out.write("Variance:\n");
-		out.write("" + StatUtils.variance(sampleResults) + "\n\n");
+		out.write("" + StatUtils.variance(sampleResults) + "\n");
+		out.write("Tweets:");
+		out.write("-------->Positive<---------");
+		for (Tweet aTweet : positiveResults) {
+			out.write(aTweet.toString() + "\n");
+		}
+		out.write("-------->Negative<---------");
+		for (Tweet aTweet : negativeResults) {
+			out.write(aTweet.toString() + "\n");
+		}
+		out.write("\n");
 		out.flush();
 	}
 }
